@@ -132,7 +132,7 @@
         factory(_, Backbone);
     }
 }(function(_, Backbone) {
-    
+
     /**
      * Takes a nested object and returns a shallow object keyed with the path names
      * e.g. { "level1.level2": "value" }
@@ -184,7 +184,7 @@
             if (result == null && i < n - 1) {
                 result = {};
             }
-            
+
             if (typeof result === 'undefined') {
                 if (return_exists)
                 {
@@ -260,7 +260,7 @@
 
         // Return a copy of the model's `attributes` object.
         toJSON: function(options) {
-          return _.deepClone(this.attributes);
+          return _.clone(this.attributes, true);
         },
 
         // Override get
@@ -274,7 +274,7 @@
         set: function(key, val, options) {
             var attr, attrs, unset, changes, silent, changing, prev, current;
             if (key == null) return this;
-            
+
             // Handle both `"key", value` and `{key: value}` -style arguments.
             if (typeof key === 'object') {
               attrs = key;
@@ -284,7 +284,7 @@
             }
 
             options || (options = {});
-            
+
             // Run validation.
             if (!this._validate(attrs, options)) return false;
 
@@ -296,7 +296,7 @@
             this._changing  = true;
 
             if (!changing) {
-              this._previousAttributes = _.deepClone(this.attributes); //<custom>: Replaced _.clone with _.deepClone
+              this._previousAttributes = _.clone(this.attributes, true);
               this.changed = {};
             }
             current = this.attributes, prev = this._previousAttributes;
@@ -329,11 +329,15 @@
 
               //<custom code>
               var separator = DeepModel.keyPathSeparator;
+              var alreadyTriggered = {}; // * @restorer
 
               for (var i = 0, l = changes.length; i < l; i++) {
                 var key = changes[i];
 
-                this.trigger('change:' + key, this, getNested(current, key), options);
+                if (!alreadyTriggered.hasOwnProperty(key) || !alreadyTriggered[key]) { // * @restorer
+                  alreadyTriggered[key] = true; // * @restorer
+                  this.trigger('change:' + key, this, getNested(current, key), options);
+                } // * @restorer
 
                 var fields = key.split(separator);
 
@@ -342,7 +346,17 @@
                   var parentKey = _.first(fields, n).join(separator),
                       wildcardKey = parentKey + separator + '*';
 
-                  this.trigger('change:' + wildcardKey, this, getNested(current, parentKey), options);
+                  if (!alreadyTriggered.hasOwnProperty(wildcardKey) || !alreadyTriggered[wildcardKey]) { // * @restorer
+                    alreadyTriggered[wildcardKey] = true; // * @restorer
+                    this.trigger('change:' + wildcardKey, this, getNested(current, parentKey), options);
+                  } // * @restorer
+
+                  // + @restorer
+                  if (!alreadyTriggered.hasOwnProperty(parentKey) || !alreadyTriggered[parentKey]) {
+                    alreadyTriggered[parentKey] = true;
+                    this.trigger('change:' + parentKey, this, getNested(current, parentKey), options);
+                  }
+                  // - @restorer
                 }
                 //</custom code>
               }
@@ -388,7 +402,7 @@
           //</custom code>
 
           var old = this._changing ? this._previousAttributes : this.attributes;
-          
+
           //<custom code>
           diff = objToPaths(diff);
           old = objToPaths(old);
@@ -416,7 +430,7 @@
         // `"change"` event.
         previousAttributes: function() {
           //<custom code>
-          return _.deepClone(this._previousAttributes);
+          return _.clone(this._previousAttributes, true);
           //</custom code>
         }
     });
@@ -431,8 +445,7 @@
 
     //For use in NodeJS
     if (typeof module != 'undefined') module.exports = DeepModel;
-    
+
     return Backbone;
 
 }));
-

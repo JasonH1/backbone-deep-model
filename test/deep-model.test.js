@@ -15,6 +15,26 @@ function create() {
     return model;
 }
 
+test('assisi test', function() {
+
+    var model = create();
+     var relation = {
+                'health-plan-health-plan-year': {
+                                'name': '2012'
+                },
+                'company-health-plan': {
+                                'name': 'WiserTogether'
+                },
+                'health-plan-health-workflow-status': {
+                                'name': 'Draft'
+                }
+
+            };
+
+    model.set('relations', relation);
+    deepEqual(model.get('relations.health-plan-health-plan-year.name'),'2012');
+});
+
 test("get: Gets nested attribute values", function() {
     var model = create();
 
@@ -372,21 +392,21 @@ test("set: options are passed to the change:[attribute] callback", function() {
 });
 
 test("has: Check if model has root key", function(){
-	var model = create();
+    var model = create();
 
-	equal(model.has('user'), true);
+    equal(model.has('user'), true);
 });
 
 test("has: Check if model has deep key", function(){
-	var model = create();
+    var model = create();
 
-	equal(model.has('user.name.last'), true);
+    equal(model.has('user.name.last'), true);
 });
 
 test("has: Don't find nonexistent key", function(){
-	var model = create();
+    var model = create();
 
-	equal(model.has('user.turtleneck'), false);
+    equal(model.has('user.turtleneck'), false);
 });
 
 test("unset: Unset a root key", function(){
